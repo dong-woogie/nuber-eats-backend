@@ -24,4 +24,7 @@ export class UserResolver {
   async login(@Args('input') loginInput: LoginInput) {
     return this.usersService.login(loginInput);
   }
+
+  @Query(returns => User)
+  me() {}
 }
