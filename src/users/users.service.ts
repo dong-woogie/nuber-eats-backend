@@ -6,12 +6,16 @@ import { Repository } from 'typeorm';
 import { CreateAccountInput } from './dtos/create-user.dto';
 import { EditProfileInput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
+import { Verification } from './entities/verification.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(Verification)
+    private readonly verifications: Repository<Verification>,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
@@ -26,7 +30,12 @@ export class UserService {
       const exist = await this.users.findOne({ email });
       if (exist) return { ok: false, error: 'exist user' };
       // create user
-      await this.users.save(this.users.create({ email, password, role }));
+      const user = await this.users.save(
+        this.users.create({ email, password, role }),
+      );
+      //create veification email
+      await this.verifications.save(this.verifications.create({ user }));
+
       return { ok: true };
     } catch (e) {
       // return error message
@@ -37,7 +46,10 @@ export class UserService {
   async login({ email, password }: LoginInput): Promise<LoginOutput> {
     try {
       // find the user with the email
-      const user = await this.users.findOne({ email });
+      const user = await this.users.findOne(
+        { email },
+        { select: ['password', 'id'] },
+      );
       if (!user) return { ok: false, error: 'User not found' };
 
       // check if the password is correct
@@ -57,9 +69,51 @@ export class UserService {
   }
 
   async editUserProfile(userId: number, { email, password }: EditProfileInput) {
-    const user = await this.users.findOne(userId);
-    if (email) user.email = email;
-    if (password) user.password = password;
-    return this.users.save(user);
+    try {
+      //exist email
+      const exist = await this.users.findOne({ email });
+      if (exist) throw new Error('exist email');
+
+      //find user
+      const user = await this.users.findOne(userId);
+      if (!user) throw new Error('Not Found User');
+
+      //edit user and create verification email
+      if (email) {
+        user.email = email;
+        await this.verifications.save(this.verifications.create({ user }));
+      }
+      if (password) user.password = password;
+      user.verified = false;
+      await this.users.save(user);
+
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message ? e.message : e };
+    }
+  }
+
+  async verifyEmail(code: string): Promise<VerifyEmailOutput> {
+    try {
+      const verification = await this.verifications.findOne(
+        { code },
+        { relations: ['user'] },
+      );
+
+      if (!verification) throw new Error('Not Found Verify Email Code');
+
+      verification.user.verified = true;
+      await this.users.save(verification.user);
+
+      // delete after verify email
+      await this.verifications.delete(verification.id);
+
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : e,
+      };
+    }
   }
 }

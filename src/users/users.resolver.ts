@@ -9,6 +9,7 @@ import {
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
 import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
+import { VerifyEmailInput, VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './users.service';
 
@@ -18,7 +19,7 @@ export class UserResolver {
 
   @Mutation(returns => CreateAccountOutput)
   async createAccount(@Args('input') createAccountInput: CreateAccountInput) {
-    return await this.usersService.createAccount(createAccountInput);
+    return this.usersService.createAccount(createAccountInput);
   }
 
   @Mutation(returns => LoginOutput)
@@ -37,10 +38,10 @@ export class UserResolver {
   async userProfile(@Args() userProfileInput: UserProfileInput) {
     try {
       const user = await this.usersService.findById(userProfileInput.userId);
-      if (!user) throw new Error();
+      if (!user) throw new Error('Nout Found User');
       return { ok: true, user };
     } catch (e) {
-      return { ok: false, error: 'User Not Found' };
+      return { ok: false, error: e.message };
     }
   }
 
@@ -49,16 +50,11 @@ export class UserResolver {
     @AuthUser() authUser: User,
     @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
-    try {
-      console.log(authUser.id);
-      const result = await this.usersService.editUserProfile(
-        authUser.id,
-        editProfileInput,
-      );
-      if (!result) throw new Error();
-      return { ok: true };
-    } catch (error) {
-      return { ok: false, error };
-    }
+    return this.usersService.editUserProfile(authUser.id, editProfileInput);
+  }
+
+  @Mutation(type => VerifyEmailOutput)
+  async verifyEmail(@Args('input') { code }: VerifyEmailInput) {
+    return this.usersService.verifyEmail(code);
   }
 }
