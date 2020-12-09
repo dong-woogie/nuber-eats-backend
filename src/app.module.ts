@@ -15,6 +15,8 @@ import { User } from './users/entities/user.entity';
 import { JwtModule } from './jwt/jwt.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
 import { AuthModule } from './auth/auth.module';
+import { Verification } from './users/entities/verification.entity';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -30,6 +32,9 @@ import { AuthModule } from './auth/auth.module';
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
         PRIVATE_KEY: Joi.string().required(),
+        MAILGUN_API_KEY: Joi.string().required(),
+        MAILGUN_DOMAIN_NAME: Joi.string().required(),
+        MAILGUN_FROM_EMAIL: Joi.string().required(),
       }),
     }),
     TypeOrmModule.forRoot({
@@ -41,7 +46,7 @@ import { AuthModule } from './auth/auth.module';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: true,
-      entities: [User],
+      entities: [User, Verification],
       // Restaurant,
     }),
     GraphQLModule.forRoot({
@@ -53,6 +58,11 @@ import { AuthModule } from './auth/auth.module';
     // RestaurantsModule,
     JwtModule.forRoot({
       privateKey: process.env['PRIVATE_KEY'],
+    }),
+    MailModule.forRoot({
+      apiKey: process.env['MAILGUN_API_KEY'],
+      domain: process.env['MAILGUN_DOMAIN_NAME'],
+      fromEmail: process.env['MAILGUN_FROM_EMAIL'],
     }),
     UsersModule,
     AuthModule,
