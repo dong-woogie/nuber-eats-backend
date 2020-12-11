@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { CreateAccountInput } from './dtos/create-user.dto';
 import { EditProfileInput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { UserProfileOutput } from './dtos/user-profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
@@ -66,8 +67,14 @@ export class UserService {
       return { ok: false, error };
     }
   }
-  async findById(id: number): Promise<User> {
-    return this.users.findOne({ id });
+
+  async findById(id: number): Promise<UserProfileOutput> {
+    try {
+      const user = await this.users.findOneOrFail({ id });
+      return { ok: true, user };
+    } catch (e) {
+      return { ok: false, error: 'Not Found User' };
+    }
   }
 
   async editUserProfile(userId: number, { email, password }: EditProfileInput) {

@@ -36,13 +36,7 @@ export class UserResolver {
   @Query(returns => UserProfileOutput)
   @UseGuards(AuthGuard)
   async userProfile(@Args() userProfileInput: UserProfileInput) {
-    try {
-      const user = await this.usersService.findById(userProfileInput.userId);
-      if (!user) throw new Error('Nout Found User');
-      return { ok: true, user };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    return this.usersService.findById(userProfileInput.userId);
   }
 
   @Mutation(returns => EditProfileOutput)
