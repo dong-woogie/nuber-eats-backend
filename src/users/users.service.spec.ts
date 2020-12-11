@@ -121,6 +121,22 @@ describe('UserService', () => {
       );
       expect(result).toMatchObject({ ok: true });
     });
+
+    it('should fail on exception', async () => {
+      userRepository.findOne.mockRejectedValue(new Error());
+      const result = await service.createAccount({
+        email: '',
+        password: '',
+        role: 0,
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        error: "Couldn't create user",
+      });
+    });
+  });
+
   });
 
   it.todo('login');
