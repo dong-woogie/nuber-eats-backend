@@ -55,7 +55,7 @@ export class UserService {
       if (!user) return { ok: false, error: 'User not found' };
 
       // check if the password is correct
-      const passwordCorrect = await user.chekcPassword(password);
+      const passwordCorrect = await user.checkPassword(password);
       if (!passwordCorrect) return { ok: false, error: 'Wrong password' };
 
       // make a JWT and give it to the user
