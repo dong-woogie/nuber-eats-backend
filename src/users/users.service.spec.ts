@@ -12,6 +12,7 @@ const mockRepository = () => ({
   save: jest.fn(),
   create: jest.fn(),
   delete: jest.fn(),
+  findOneOrFail: jest.fn(),
 });
 
 const mockJwtRepository = {
@@ -30,8 +31,9 @@ describe('UserService', () => {
   let userRepository: MockRepository;
   let verificationRepository: MockRepository;
   let mailService: MailService;
+  let jwtService: JwtService;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
         UserService,
@@ -60,6 +62,7 @@ describe('UserService', () => {
       getRepositoryToken(Verification),
     );
     mailService = module.get<MailService>(MailService);
+    jwtService = module.get<JwtService>(JwtService);
   });
 
   it('shoud be defined', () => {
@@ -137,6 +140,46 @@ describe('UserService', () => {
     });
   });
 
+  describe('login', () => {
+    const loginArgs = {
+      email: 'mock@co.kr',
+      password: 'mock1234',
+    };
+
+    it('should fail if user does not exist', async () => {
+      userRepository.findOne.mockResolvedValue(undefined);
+      const result = await service.login(loginArgs);
+
+      expect(userRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(userRepository.findOne).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+      );
+      expect(result).toMatchObject({ ok: false, error: 'User not found' });
+    });
+
+    it('should fail if the password is wrong', async () => {
+      const mockedUser = {
+        checkPassword: jest.fn(() => Promise.resolve(false)),
+      };
+      userRepository.findOne.mockResolvedValue(mockedUser);
+      const result = await service.login(loginArgs);
+
+      expect(result).toMatchObject({ ok: false, error: 'Wrong password' });
+    });
+
+    it('should return token if the password correct', async () => {
+      const mockedUser = {
+        id: 1,
+        checkPassword: jest.fn(() => Promise.resolve(true)),
+      };
+      userRepository.findOne.mockResolvedValue(mockedUser);
+
+      const result = await service.login(loginArgs);
+      expect(jwtService.sign).toHaveBeenCalledTimes(1);
+      expect(jwtService.sign).toHaveBeenCalledWith({ id: expect.any(Number) });
+      expect(result).toMatchObject({ ok: true, token: 'sign token' });
+    });
   });
 
   it.todo('login');
