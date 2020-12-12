@@ -41,7 +41,6 @@ export class MailService {
         },
       );
     } catch (e) {
-      console.error(e);
     }
   }
 
