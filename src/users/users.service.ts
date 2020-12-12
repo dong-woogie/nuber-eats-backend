@@ -49,11 +49,10 @@ export class UserService {
   async login({ email, password }: LoginInput): Promise<LoginOutput> {
     try {
       // find the user with the email
-      const user = await this.users.findOne(
+      const user = await this.users.findOneOrFail(
         { email },
         { select: ['password', 'id'] },
       );
-      if (!user) return { ok: false, error: 'User not found' };
 
       // check if the password is correct
       const passwordCorrect = await user.checkPassword(password);
@@ -64,7 +63,7 @@ export class UserService {
       const token = this.jwtService.sign({ id: user.id });
       return { ok: true, token };
     } catch (error) {
-      return { ok: false, error };
+      return { ok: false, error: 'User not found' };
     }
   }
 
@@ -102,20 +101,17 @@ export class UserService {
     } catch (e) {
       return {
         ok: false,
-        error: e.message ? e.message : "'Could not update profile'",
+        error: e.message ? e.message : 'Could not update profile',
       };
     }
   }
 
   async verifyEmail(code: string): Promise<VerifyEmailOutput> {
     try {
-      const verification = await this.verifications.findOne(
+      const verification = await this.verifications.findOneOrFail(
         { code },
         { relations: ['user'] },
       );
-
-      if (!verification) throw new Error('Not Found Verify Email Code');
-
       verification.user.verified = true;
       await this.users.save(verification.user);
 
@@ -126,7 +122,7 @@ export class UserService {
     } catch (e) {
       return {
         ok: false,
-        error: e.message,
+        error: 'Verification Not Found',
       };
     }
   }

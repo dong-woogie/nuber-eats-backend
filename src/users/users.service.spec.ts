@@ -146,23 +146,11 @@ describe('UserService', () => {
       password: 'mock1234',
     };
 
-    it('should fail if user does not exist', async () => {
-      userRepository.findOne.mockResolvedValue(undefined);
-      const result = await service.login(loginArgs);
-
-      expect(userRepository.findOne).toHaveBeenCalledTimes(1);
-      expect(userRepository.findOne).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-      );
-      expect(result).toMatchObject({ ok: false, error: 'User not found' });
-    });
-
     it('should fail if the password is wrong', async () => {
       const mockedUser = {
         checkPassword: jest.fn(() => Promise.resolve(false)),
       };
-      userRepository.findOne.mockResolvedValue(mockedUser);
+      userRepository.findOneOrFail.mockResolvedValue(mockedUser);
       const result = await service.login(loginArgs);
 
       expect(result).toMatchObject({ ok: false, error: 'Wrong password' });
@@ -173,12 +161,18 @@ describe('UserService', () => {
         id: 1,
         checkPassword: jest.fn(() => Promise.resolve(true)),
       };
-      userRepository.findOne.mockResolvedValue(mockedUser);
+      userRepository.findOneOrFail.mockResolvedValue(mockedUser);
 
       const result = await service.login(loginArgs);
       expect(jwtService.sign).toHaveBeenCalledTimes(1);
       expect(jwtService.sign).toHaveBeenCalledWith({ id: expect.any(Number) });
       expect(result).toMatchObject({ ok: true, token: 'sign token' });
+    });
+
+    it('should fail on exception', async () => {
+      userRepository.findOne.mockRejectedValue(new Error());
+      const result = await service.login(loginArgs);
+      expect(result).toEqual({ ok: false, error: 'User not found' });
     });
   });
 
@@ -230,6 +224,17 @@ describe('UserService', () => {
       verified: false,
       email: editProfileAgrs.input.email,
     };
+
+    it('should fail if email exist', async () => {
+      userRepository.findOne.mockResolvedValue(oldUser);
+
+      const result = await service.editUserProfile(
+        editProfileAgrs.id,
+        editProfileAgrs.input,
+      );
+
+      expect(result).toEqual({ ok: false, error: 'exist email' });
+    });
 
     it('should change email', async () => {
       userRepository.findOne.mockResolvedValue(undefined);
@@ -292,7 +297,7 @@ describe('UserService', () => {
       );
       expect(result).toEqual({
         ok: false,
-        error: "'Could not update profile'",
+        error: 'Could not update profile',
       });
     });
   });
