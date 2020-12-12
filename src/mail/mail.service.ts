@@ -10,12 +10,12 @@ export class MailService {
     @Inject(CONFIG_OPTIONS) private readonly options: MailModuleOptions,
   ) {}
 
-  private async sendEmail(
+  async sendEmail(
     subject: string,
     to: string,
     template: string,
     emailVars: EmailVars[],
-  ) {
+  ): Promise<boolean> {
     const form = new FormData();
     form.append(
       'from',
@@ -24,9 +24,9 @@ export class MailService {
     form.append('to', 'com6511@gmail.com');
     form.append('subject', subject);
     form.append('template', template);
-    emailVars.forEach(emailVar =>
-      form.append(`v:${emailVar.key}`, emailVar.value),
-    );
+    emailVars.forEach(emailVar => {
+      form.append(`v:${emailVar.key}`, emailVar.value);
+    });
 
     try {
       await got.post(
@@ -40,7 +40,9 @@ export class MailService {
           body: form,
         },
       );
+      return true;
     } catch (e) {
+      return false;
     }
   }
 
