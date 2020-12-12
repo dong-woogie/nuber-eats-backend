@@ -84,8 +84,7 @@ export class UserService {
       if (exist) throw new Error('exist email');
 
       //find user
-      const user = await this.users.findOne(userId);
-      if (!user) throw new Error('Not Found User');
+      const user = await this.users.findOneOrFail(userId);
 
       //edit user and create verification email
       if (email) {
@@ -101,7 +100,10 @@ export class UserService {
 
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: e.message ? e.message : e };
+      return {
+        ok: false,
+        error: e.message ? e.message : "'Could not update profile'",
+      };
     }
   }
 
@@ -124,7 +126,7 @@ export class UserService {
     } catch (e) {
       return {
         ok: false,
-        error: e.message ? e.message : e,
+        error: e.message,
       };
     }
   }

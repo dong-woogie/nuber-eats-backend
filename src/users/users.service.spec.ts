@@ -210,6 +210,92 @@ describe('UserService', () => {
       });
     });
   });
-  describe('editUserProfile', () => {});
-  describe('verifyEmail', () => {});
+
+  describe('editUserProfile', () => {
+    const oldUser = {
+      email: 'old@.co.kr',
+      verified: true,
+    };
+
+    const editProfileAgrs = {
+      id: 1,
+      input: { email: 'new@co.kr' },
+    };
+
+    const newVerification = {
+      code: 'code',
+    };
+
+    const newUser = {
+      verified: false,
+      email: editProfileAgrs.input.email,
+    };
+
+    it('should change email', async () => {
+      userRepository.findOne.mockResolvedValue(undefined);
+      userRepository.findOneOrFail.mockResolvedValue(oldUser);
+
+      verificationRepository.create.mockReturnValue(newVerification);
+      verificationRepository.save.mockResolvedValue(newVerification);
+
+      await service.editUserProfile(editProfileAgrs.id, editProfileAgrs.input);
+
+      expect(userRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(userRepository.findOneOrFail).toHaveBeenCalledTimes(1);
+      expect(verificationRepository.create).toHaveBeenCalledTimes(1);
+      expect(verificationRepository.save).toHaveBeenCalledTimes(1);
+
+      expect(userRepository.findOne).toHaveBeenCalledWith(
+        editProfileAgrs.input,
+      );
+      expect(userRepository.findOneOrFail).toHaveBeenCalledWith(
+        editProfileAgrs.id,
+      );
+      expect(verificationRepository.create).toHaveBeenCalledWith({
+        user: newUser,
+      });
+      expect(verificationRepository.save).toHaveBeenCalledWith(newVerification);
+
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        newUser.email,
+        newVerification.code,
+      );
+    });
+
+    it('should change password', async () => {
+      const oldUser = {
+        password: '1212',
+        verified: true,
+      };
+      const editProfileAgrs = {
+        id: 1,
+        input: { password: '1234' },
+      };
+      const newUser = {
+        verified: false,
+        password: editProfileAgrs.input.password,
+      };
+      userRepository.findOne.mockResolvedValue(undefined);
+      userRepository.findOneOrFail.mockResolvedValue(oldUser);
+      await service.editUserProfile(editProfileAgrs.id, editProfileAgrs.input);
+
+      expect(userRepository.save).toHaveBeenCalled();
+      expect(userRepository.save).toHaveBeenCalledWith(newUser);
+    });
+
+    it('sholud fail on exception', async () => {
+      userRepository.findOneOrFail.mockRejectedValue(new Error());
+
+      const result = await service.editUserProfile(
+        editProfileAgrs.id,
+        editProfileAgrs.input,
+      );
+      expect(result).toEqual({
+        ok: false,
+        error: "'Could not update profile'",
+      });
+    });
+  });
+
+  // describe('verifyEmail', () => {});
 });
