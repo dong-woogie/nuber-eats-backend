@@ -297,5 +297,39 @@ describe('UserService', () => {
     });
   });
 
-  // describe('verifyEmail', () => {});
+  describe('verifyEmail', () => {
+    it('should verify email', async () => {
+      const verificationArgs = {
+        id: 1,
+        user: {
+          verified: false,
+        },
+      };
+      verificationRepository.findOneOrFail.mockResolvedValue(verificationArgs);
+      await service.verifyEmail('');
+
+      expect(verificationRepository.findOneOrFail).toHaveBeenCalledTimes(1);
+      expect(verificationRepository.findOneOrFail).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+      );
+
+      expect(userRepository.save).toHaveBeenCalledTimes(1);
+      expect(userRepository.save).toHaveBeenCalledWith({ verified: true });
+
+      expect(verificationRepository.delete).toHaveBeenCalledTimes(1);
+      expect(verificationRepository.delete).toHaveBeenCalledWith(
+        verificationArgs.id,
+      );
+    });
+
+    it('should fail on exception', async () => {
+      verificationRepository.findOneOrFail.mockRejectedValue(new Error());
+      const result = await service.verifyEmail('');
+      expect(result).toEqual({
+        ok: false,
+        error: 'Verification Not Found',
+      });
+    });
+  });
 });
