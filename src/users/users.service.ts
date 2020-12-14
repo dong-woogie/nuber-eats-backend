@@ -85,16 +85,19 @@ export class UserService {
       //find user
       const user = await this.users.findOneOrFail(userId);
 
+      // delete verification because verification is unique
+      await this.verifications.delete({ user: { id: user.id } });
+
       //edit user and create verification email
       if (email) {
         user.email = email;
+        user.verified = false;
         const verification = await this.verifications.save(
           this.verifications.create({ user }),
         );
         this.mailService.sendVerificationEmail(user.email, verification.code);
       }
       if (password) user.password = password;
-      user.verified = false;
       await this.users.save(user);
 
       return { ok: true };

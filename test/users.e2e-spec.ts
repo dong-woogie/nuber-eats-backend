@@ -5,6 +5,7 @@ import * as request from 'supertest';
 import { AppModule } from 'src/app.module';
 import { User } from 'src/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Verification } from 'src/users/entities/verification.entity';
 
 jest.mock('got', () => ({
   post: jest.fn(),
@@ -15,6 +16,9 @@ const GRAPHQL_END_POINT = '/graphql';
 describe('UserModule E2E', () => {
   let app: INestApplication;
   let token: string;
+  let userRepository: Repository<User>;
+  let verificationRepository: Repository<Verification>;
+
   const EMAIL = 'test@co.kr';
   const PASSWORD = 'test123';
 
@@ -23,6 +27,10 @@ describe('UserModule E2E', () => {
       imports: [AppModule],
     }).compile();
     app = module.createNestApplication();
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    verificationRepository = module.get<Repository<Verification>>(
+      getRepositoryToken(Verification),
+    );
     await app.init();
   });
 
@@ -289,6 +297,115 @@ describe('UserModule E2E', () => {
         });
     });
   });
-  it.todo('verifyEmail');
-  it.todo('editProfile');
+
+  describe('editProfile', () => {
+    const NEW_EMAIL = 'newEmail';
+    it('should change email', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .set('x-jwt', token)
+        .send({
+          query: `
+          mutation {
+            editProfile(input : {
+              email : "${NEW_EMAIL}"
+            }) {
+              ok
+              error
+            }
+          }
+        `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: {
+                editProfile: { ok, error },
+              },
+            },
+          } = res;
+
+          expect(ok).toBe(true);
+          expect(error).toBe(null);
+        });
+    });
+
+    it('should have new email', async () => {
+      const result = await request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .set('x-jwt', token)
+        .send({
+          query: `
+            {
+              me {
+                email
+              }
+            }
+          `,
+        })
+        .expect(200);
+
+      const { email } = result?.body?.data?.me;
+
+      expect(email).toBe(NEW_EMAIL);
+    });
+  });
+
+  describe('verifyEmail', () => {
+    let userId: number;
+    beforeAll(async () => {
+      const [user] = await userRepository.find();
+      userId = user.id;
+    });
+
+    it('should verify email', async () => {
+      const { code } = await verificationRepository.findOne({
+        user: { id: userId },
+      });
+      const res = await request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .send({
+          query: `
+          mutation {
+            verifyEmail(input:{
+              code : "${code}"
+            }){
+              ok,
+              error
+            }
+          }
+        `,
+        })
+        .expect(200);
+
+      const { ok, error } = res?.body?.data?.verifyEmail;
+
+      expect(ok).toBe(true);
+      expect(error).toBe(null);
+    });
+
+    it('should fail on wrong verify code', async () => {
+      const res = await request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .send({
+          query: `
+          mutation {
+            verifyEmail(input:{
+              code : "wrong code"
+            }){
+              ok,
+              error
+            }
+          }
+        `,
+        })
+        .expect(200);
+
+      const { ok, error } = res?.body?.data?.verifyEmail;
+
+      expect(ok).toBe(false);
+      expect(error).toBe('Verification Not Found');
+    });
+  });
 });
