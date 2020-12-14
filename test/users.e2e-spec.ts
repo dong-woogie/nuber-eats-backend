@@ -1,8 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { getConnection } from 'typeorm';
+import { getConnection, Repository } from 'typeorm';
 import * as request from 'supertest';
 import { AppModule } from 'src/app.module';
+import { User } from 'src/users/entities/user.entity';
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 jest.mock('got', () => ({
   post: jest.fn(),
@@ -171,7 +173,75 @@ describe('UserModule E2E', () => {
         });
     });
   });
-  it.todo('userProfile');
+
+  describe('userProfile', () => {
+    //
+    const userId = 1;
+    it("should see user's profile", async () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .set('x-jwt', token)
+        .send({
+          query: `
+        {
+          userProfile (userId : ${userId}){
+            ok
+            error
+            user {
+              id
+            }
+          }
+        }
+      `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: {
+                userProfile: { ok, error, user },
+              },
+            },
+          } = res;
+          expect(ok).toBe(true);
+          expect(error).toBe(null);
+          expect(user.id).toBe(userId);
+        });
+    });
+
+    it('should not found a profile', async () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .set('x-jwt', token)
+        .send({
+          query: `
+        {
+          userProfile (userId :2){
+            ok
+            error
+            user {
+              id
+            }
+          }
+        }
+      `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: {
+                userProfile: { ok, error, user },
+              },
+            },
+          } = res;
+          expect(ok).toBe(false);
+          expect(error).toBe('Not Found User');
+          expect(user).toBe(null);
+        });
+    });
+  });
+
   it.todo('me');
   it.todo('verifyEmail');
   it.todo('editProfile');
