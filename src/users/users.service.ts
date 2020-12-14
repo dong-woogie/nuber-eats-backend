@@ -63,7 +63,7 @@ export class UserService {
       const token = this.jwtService.sign({ id: user.id });
       return { ok: true, token };
     } catch (error) {
-      return { ok: false, error: 'User not found' };
+      return { ok: false, error: 'Not Found User' };
     }
   }
 

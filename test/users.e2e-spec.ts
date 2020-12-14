@@ -12,6 +12,9 @@ const GRAPHQL_END_POINT = '/graphql';
 
 describe('UserModule E2E', () => {
   let app: INestApplication;
+  let token: string;
+  const EMAIL = 'test@co.kr';
+  const PASSWORD = 'test123';
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -27,8 +30,6 @@ describe('UserModule E2E', () => {
   });
 
   describe('createAccount', () => {
-    const email = 'test@co.kr';
-
     it('should create account', () => {
       return request(app.getHttpServer())
         .post(GRAPHQL_END_POINT)
@@ -36,8 +37,8 @@ describe('UserModule E2E', () => {
           query: `
           mutation {
             createAccount(input:{
-              email : "${email}",
-              password : "test123",
+              email : "${EMAIL}",
+              password : "${PASSWORD}",
               role : Client
             }) {
               ok
@@ -60,8 +61,8 @@ describe('UserModule E2E', () => {
           query: `
           mutation {
             createAccount(input:{
-              email : "${email}",
-              password : "test123",
+              email : "${EMAIL}",
+              password : "${PASSWORD}",
               role : Client
             }) {
               ok
@@ -76,11 +77,102 @@ describe('UserModule E2E', () => {
           expect(res.body.data.createAccount.error).toBe('exist user');
         });
     });
-
-    it.todo('userProfile');
-    it.todo('me');
-    it.todo('login');
-    it.todo('verifyEmail');
-    it.todo('editProfile');
   });
+
+  describe('login', () => {
+    it('should login with correct credentials', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .send({
+          query: `
+          mutation{
+            login (input:{
+              email : "${EMAIL}",
+              password : "${PASSWORD}"
+            }){
+              ok,
+              error,
+              token
+            }
+          }
+        `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { login },
+            },
+          } = res;
+          token = login.token;
+          expect(login.ok).toBe(true);
+          expect(login.error).toBe(null);
+          expect(login.token).toEqual(expect.any(String));
+        });
+    });
+
+    it('should fail if the password is wrong', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .send({
+          query: `
+          mutation{
+            login (input:{
+              email : "${EMAIL}",
+              password : "WRONG PASSWORD"
+            }){
+              ok,
+              error,
+              token
+            }
+          }
+        `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { login },
+            },
+          } = res;
+          expect(login.ok).toBe(false);
+          expect(login.error).toBe('Wrong password');
+          expect(login.token).toBe(null);
+        });
+    });
+
+    it('should fail if the user not found ', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_END_POINT)
+        .send({
+          query: `
+          mutation{
+            login (input:{
+              email : "NOT EXIST EMAIL",
+              password : "${PASSWORD}"
+            }){
+              ok,
+              error,
+              token
+            }
+          }
+        `,
+        })
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { login },
+            },
+          } = res;
+          expect(login.ok).toBe(false);
+          expect(login.error).toBe('Not Found User');
+          expect(login.token).toBe(null);
+        });
+    });
+  });
+  it.todo('userProfile');
+  it.todo('me');
+  it.todo('verifyEmail');
+  it.todo('editProfile');
 });
