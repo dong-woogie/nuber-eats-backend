@@ -26,6 +26,15 @@ The Backend of Nuber Eats Clone
 - Column 설정 : Typeorm ( Database )
 - Validation 설정 : 검사
 
+## Restaurant Model:
+
+- name
+- address
+- category
+- coverImage
+
+## Restaurant CRUD:
+
 **항상확인하기**
 
 **주석으로 설계하고 코딩하는 거 좋은 거 같다.**
