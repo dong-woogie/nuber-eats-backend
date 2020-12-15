@@ -2,6 +2,7 @@ import { UseGuards } from '@nestjs/common';
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { AuthUser } from 'src/auth/auth-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { Roles } from 'src/auth/role.decorator';
 import {
   CreateAccountInput,
   CreateAccountOutput,
@@ -27,28 +28,29 @@ export class UserResolver {
     return this.usersService.login(loginInput);
   }
 
+  @Mutation(type => VerifyEmailOutput)
+  async verifyEmail(@Args('input') { code }: VerifyEmailInput) {
+    return this.usersService.verifyEmail(code);
+  }
+
   @Query(returns => User)
-  @UseGuards(AuthGuard)
+  @Roles(['Any'])
   me(@AuthUser() authUser: User) {
     return authUser;
   }
 
   @Query(returns => UserProfileOutput)
-  @UseGuards(AuthGuard)
+  @Roles(['Any'])
   async userProfile(@Args() userProfileInput: UserProfileInput) {
     return this.usersService.findById(userProfileInput.userId);
   }
 
   @Mutation(returns => EditProfileOutput)
+  @Roles(['Any'])
   async editProfile(
     @AuthUser() authUser: User,
     @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
     return this.usersService.editUserProfile(authUser.id, editProfileInput);
-  }
-
-  @Mutation(type => VerifyEmailOutput)
-  async verifyEmail(@Args('input') { code }: VerifyEmailInput) {
-    return this.usersService.verifyEmail(code);
   }
 }

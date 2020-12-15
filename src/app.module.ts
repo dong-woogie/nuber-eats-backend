@@ -66,6 +66,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     UsersModule,
     AuthModule,
     RestaurantsModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],
