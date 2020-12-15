@@ -55,7 +55,6 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
         user: req['user'],
       }),
     }),
-    // RestaurantsModule,
     JwtModule.forRoot({
       privateKey: process.env['PRIVATE_KEY'],
     }),
@@ -66,7 +65,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     }),
     UsersModule,
     AuthModule,
-    // RestaurantsModule,
+    RestaurantsModule,
   ],
   controllers: [],
   providers: [],
