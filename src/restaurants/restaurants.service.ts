@@ -6,6 +6,7 @@ import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
+import { DeleteRestaurantInput } from './dtos/delete-restaurant.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -43,14 +44,9 @@ export class RestaurantSerivce {
   ): Promise<EditRestaurantOutput> {
     try {
       const { restaurantId, categoryName } = editRestaurantInput;
-      const restaurant = await this.restaurants.findOne(restaurantId);
-
-      if (!restaurant) throw new Error('Restaurant not found');
-      if (owner.id !== restaurant.ownerId) {
-        throw new Error("You can't edit restaurant that you don't own");
-      }
-
       let category: Category;
+
+      await this.checkValidRestaurant(owner.id, restaurantId);
       if (categoryName) {
         category = await this.categorys.findOrCreate(categoryName);
       }
@@ -69,5 +65,28 @@ export class RestaurantSerivce {
         error: e.message ? e.message : 'Could edit restaurant',
       };
     }
+  }
+
+  async deleteRestaurant(owner: User, { restaurantId }: DeleteRestaurantInput) {
+    try {
+      await this.checkValidRestaurant(owner.id, restaurantId);
+      await this.restaurants.delete(restaurantId);
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : 'Could not delete restaurant',
+      };
+    }
+  }
+
+  async checkValidRestaurant(
+    ownerId: number,
+    restaurantId: number,
+  ): Promise<void> {
+    const restaurant = await this.restaurants.findOne(restaurantId);
+    if (!restaurant) throw new Error('Not Found Restaurant');
+    if (ownerId !== restaurant.ownerId)
+      throw new Error("You don't own a restaurant");
   }
 }
