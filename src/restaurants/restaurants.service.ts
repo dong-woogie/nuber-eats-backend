@@ -13,6 +13,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
@@ -98,6 +99,25 @@ export class RestaurantSerivce {
       ok: true,
       categories,
     };
+  }
+
+  async allRestaurants({ page }: RestaurantsInput): Promise<RestaurantsOutput> {
+    try {
+      const results = await this.baseResults<Restaurant>({
+        schema: this.restaurants,
+        page,
+        take: 3,
+      });
+      return {
+        ok: true,
+        ...results,
+      };
+    } catch {
+      return {
+        ok: false,
+        error: 'Could not load restaurants',
+      };
+    }
   }
 
   async restaurantCountByCategory(category: Category): Promise<number> {
