@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { FindConditions, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
+import { CategoryInput } from './dtos/category.dto';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
@@ -103,19 +104,59 @@ export class RestaurantSerivce {
     return this.restaurants.count({ category });
   }
 
-  async findCategoryBySlug(slug: string) {
+  async findCategoryBySlug(categoryInput: CategoryInput) {
     try {
-      const category = this.categorys.findOne(
-        { slug },
-        { relations: ['restaurants'] },
-      );
+      const { slug, page } = categoryInput;
+      const category = await this.categorys.findOne({ slug });
       if (!category) throw new Error('Could not found');
-      return { ok: true, category };
+
+      const {
+        results: restaurants,
+        totalPages,
+        totalResults,
+      } = await this.baseResults<Restaurant>({
+        schema: this.restaurants,
+        page,
+        take: 3,
+        where: { category },
+      });
+
+      return {
+        ok: true,
+        category,
+        totalPages,
+        totalResults,
+        restaurants,
+      };
     } catch (e) {
       return {
         ok: false,
         error: e.message ? e.message : 'Could not load category',
       };
     }
+  }
+
+  async baseResults<T>(baseResultsInput: {
+    schema: Repository<T>;
+    page: number;
+    take?: number;
+    where?: FindConditions<T>;
+  }): Promise<{
+    totalResults: number;
+    totalPages: number;
+    results: T[];
+  }> {
+    const { schema, page, take, where } = baseResultsInput;
+    const [results, totalResults] = await schema.findAndCount({
+      where,
+      take,
+      skip: take * (page - 1),
+    });
+    const totalPages = Math.ceil(totalResults / take);
+    return {
+      totalPages,
+      totalResults,
+      results,
+    };
   }
 }
