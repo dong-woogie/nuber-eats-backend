@@ -24,6 +24,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
@@ -67,8 +68,13 @@ export class RestaurantResolver {
   }
 
   @Query(returns => RestaurantsOutput)
-  restaurants(restaurantsInput: RestaurantsInput) {
+  restaurants(@Args('input') restaurantsInput: RestaurantsInput) {
     return this.restaurantSerivce.allRestaurants(restaurantsInput);
+  }
+
+  @Query(returns => RestaurantOutput)
+  restaurant(@Args('input') restaurantInput: RestaurantInput) {
+    return this.restaurantSerivce.findRestaurantById(restaurantInput);
   }
 }
 
