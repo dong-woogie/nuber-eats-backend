@@ -4,12 +4,14 @@ import { User } from 'src/users/entities/user.entity';
 import { FindConditions, Raw, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput } from './dtos/category.dto';
-import { CreateDishInput } from './dtos/create-dish.dto';
+import { CreateDishInput, CreateDishOutput } from './dtos/create-dish.dto';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
+import { DeleteDishInput, DeleteDishOutput } from './dtos/delete-dish.dto';
 import { DeleteRestaurantInput } from './dtos/delete-restaurant.dto';
+import { EditDishInput, EditDishOutput } from './dtos/edit-dish.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -230,7 +232,10 @@ export class RestaurantSerivce {
     };
   }
 
-  async createDish(owner: User, createDishInput: CreateDishInput) {
+  async createDish(
+    owner: User,
+    createDishInput: CreateDishInput,
+  ): Promise<CreateDishOutput> {
     try {
       const restaurant = await this.findOneAndcheckValid(
         owner.id,
@@ -245,6 +250,53 @@ export class RestaurantSerivce {
       return {
         ok: false,
         error: e.message ? e.message : 'Could not create menu',
+      };
+    }
+  }
+
+  async editDish(
+    owner: User,
+    editDishInput: EditDishInput,
+  ): Promise<EditDishOutput> {
+    try {
+      const dish = await this.dishes.findOne(editDishInput.dishId, {
+        relations: ['restaurant'],
+      });
+      if (!dish) throw new Error('Not found dish');
+
+      await this.findOneAndcheckValid(owner.id, dish.restaurant.ownerId);
+      await this.dishes.save([
+        {
+          id: editDishInput.dishId,
+          ...editDishInput,
+        },
+      ]);
+
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : 'Could not edit menu',
+      };
+    }
+  }
+
+  async deleteDish(
+    owner: User,
+    { dishId }: DeleteDishInput,
+  ): Promise<DeleteDishOutput> {
+    try {
+      const dish = await this.dishes.findOne(dishId, {
+        relations: ['restaurant'],
+      });
+      if (!dish) throw new Error('Not found dish');
+      await this.findOneAndcheckValid(owner.id, dish.restaurant.ownerId);
+      await this.dishes.delete(dishId);
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : 'Could not delete menu',
       };
     }
   }

@@ -17,10 +17,12 @@ import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
+import { DeleteDishInput, DeleteDishOutput } from './dtos/delete-dish.dto';
 import {
   DeleteRestaurantInput,
   DeleteRestaurantOutput,
 } from './dtos/delete-restaurant.dto';
+import { EditDishInput, EditDishOutput } from './dtos/edit-dish.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -122,5 +124,23 @@ export class DishResolver {
     @Args('input') createDishInput: CreateDishInput,
   ) {
     return this.restaurantService.createDish(owner, createDishInput);
+  }
+
+  @Mutation(type => EditDishOutput)
+  @Roles(['Owner'])
+  editDish(
+    @AuthUser() owner: User,
+    @Args('input') editDishInput: EditDishInput,
+  ) {
+    return this.restaurantService.editDish(owner, editDishInput);
+  }
+
+  @Mutation(type => DeleteDishOutput)
+  @Roles(['Owner'])
+  deleteDish(
+    @AuthUser() owner: User,
+    @Args('input') deleteDishInput: DeleteDishInput,
+  ) {
+    return this.restaurantService.deleteDish(owner, deleteDishInput);
   }
 }
