@@ -4,6 +4,7 @@ import { User } from 'src/users/entities/user.entity';
 import { FindConditions, Raw, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput } from './dtos/category.dto';
+import { CreateDishInput } from './dtos/create-dish.dto';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
@@ -20,6 +21,7 @@ import {
   SearchRestaurantOutput,
 } from './dtos/search-restaurant.dto';
 import { Category } from './entities/category.entity';
+import { Dish } from './entities/dish.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
 
@@ -29,6 +31,8 @@ export class RestaurantSerivce {
     @InjectRepository(Restaurant)
     private readonly restaurants: Repository<Restaurant>,
     private readonly categorys: CategoryRepository,
+    @InjectRepository(Dish)
+    private readonly dishes: Repository<Dish>,
   ) {}
 
   async createRestaurant(
@@ -54,7 +58,7 @@ export class RestaurantSerivce {
       const { restaurantId, categoryName } = editRestaurantInput;
       let category: Category;
 
-      await this.checkValidRestaurant(owner.id, restaurantId);
+      await this.findOneAndcheckValid(owner.id, restaurantId);
       if (categoryName) {
         category = await this.categorys.findOrCreate(categoryName);
       }
@@ -77,7 +81,7 @@ export class RestaurantSerivce {
 
   async deleteRestaurant(owner: User, { restaurantId }: DeleteRestaurantInput) {
     try {
-      await this.checkValidRestaurant(owner.id, restaurantId);
+      await this.findOneAndcheckValid(owner.id, restaurantId);
       await this.restaurants.delete(restaurantId);
       return { ok: true };
     } catch (e) {
@@ -88,14 +92,15 @@ export class RestaurantSerivce {
     }
   }
 
-  async checkValidRestaurant(
+  async findOneAndcheckValid(
     ownerId: number,
     restaurantId: number,
-  ): Promise<void> {
+  ): Promise<Restaurant> {
     const restaurant = await this.restaurants.findOne(restaurantId);
     if (!restaurant) throw new Error('Not Found Restaurant');
     if (ownerId !== restaurant.ownerId)
       throw new Error("You don't own a restaurant");
+    return restaurant;
   }
 
   async allCategoies(): Promise<AllCategoriesOutput> {
@@ -223,5 +228,24 @@ export class RestaurantSerivce {
       totalResults,
       results,
     };
+  }
+
+  async createDish(owner: User, createDishInput: CreateDishInput) {
+    try {
+      const restaurant = await this.findOneAndcheckValid(
+        owner.id,
+        createDishInput.restaurantId,
+      );
+      await this.dishes.save(
+        this.dishes.create({ ...createDishInput, restaurant }),
+      );
+
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : 'Could not create menu',
+      };
+    }
   }
 }
