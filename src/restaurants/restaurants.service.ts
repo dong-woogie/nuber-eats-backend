@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { FindConditions, Repository } from 'typeorm';
+import { FindConditions, Raw, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput } from './dtos/category.dto';
 import {
@@ -15,6 +15,10 @@ import {
 } from './dtos/edit-restaurant.dto';
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
+import {
+  SearchRestaurantInput,
+  SearchRestaurantOutput,
+} from './dtos/search-restaurant.dto';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
@@ -132,6 +136,35 @@ export class RestaurantSerivce {
     }
   }
 
+  async searchRestaurantByName({
+    query,
+    page,
+  }: SearchRestaurantInput): Promise<SearchRestaurantOutput> {
+    try {
+      this.restaurants.find({
+        where: {
+          name: Raw(name => `${name} ILIKE '%${query}%'`),
+        },
+      });
+
+      const {
+        results: restaurants,
+        totalPages,
+        totalResults,
+      } = await this.baseResults({
+        schema: this.restaurants,
+        page,
+        take: 5,
+        where: {
+          name: Raw(name => `${name} ILIKE '%${query}%'`),
+        },
+      });
+      return { ok: true, totalPages, totalResults, restaurants };
+    } catch {
+      return { ok: false, error: 'Could not search for restaurants' };
+    }
+  }
+
   async restaurantCountByCategory(category: Category): Promise<number> {
     return this.restaurants.count({ category });
   }
@@ -170,7 +203,7 @@ export class RestaurantSerivce {
 
   async baseResults<T>(baseResultsInput: {
     schema: Repository<T>;
-    page: number;
+    page?: number;
     take?: number;
     where?: FindConditions<T>;
   }): Promise<{
@@ -178,13 +211,13 @@ export class RestaurantSerivce {
     totalPages: number;
     results: T[];
   }> {
-    const { schema, page, take, where } = baseResultsInput;
+    const { schema, page = 1, take, where } = baseResultsInput;
     const [results, totalResults] = await schema.findAndCount({
       where,
       take,
       skip: take * (page - 1),
     });
-    const totalPages = Math.ceil(totalResults / take);
+    const totalPages = take ? Math.ceil(totalResults / take) : 1;
     return {
       totalPages,
       totalResults,
