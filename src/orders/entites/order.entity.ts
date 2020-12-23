@@ -11,6 +11,7 @@ import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Column, Entity, JoinTable, ManyToMany, ManyToOne } from 'typeorm';
+import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
   Pending = 'Pending',
@@ -46,10 +47,10 @@ export class Order extends CoreEntity {
   })
   restaurant?: Restaurant;
 
-  @Field(type => [Dish])
-  @ManyToMany(type => Dish, dish => dish.orders)
+  @Field(type => [OrderItem])
+  @ManyToMany(type => OrderItem)
   @JoinTable()
-  dishes: Dish[];
+  items: OrderItem[];
 
   @Field(type => Float, { nullable: true })
   @Column({ nullable: true })
