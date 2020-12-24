@@ -58,7 +58,7 @@ export class Order extends CoreEntity {
   total?: number;
 
   @Field(type => OrderStatus)
-  @Column({ type: 'enum', enum: OrderStatus })
+  @Column({ type: 'enum', enum: OrderStatus, default: 'Pending' })
   @IsEnum(OrderStatus)
   orderStatus: OrderStatus;
 }

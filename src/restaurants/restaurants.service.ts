@@ -136,7 +136,9 @@ export class RestaurantSerivce {
     restaurantId,
   }: RestaurantInput): Promise<RestaurantOutput> {
     try {
-      const result = await this.restaurants.findOneOrFail(restaurantId);
+      const result = await this.restaurants.findOneOrFail(restaurantId, {
+        relations: ['menu'],
+      });
       return { ok: true, result };
     } catch {
       return { ok: false, error: 'Cannot find restaurant' };
