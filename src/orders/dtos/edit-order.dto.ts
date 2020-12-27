@@ -1,0 +1,16 @@
+import {
+  Field,
+  InputType,
+  Int,
+  ObjectType,
+  PartialType,
+  PickType,
+} from '@nestjs/graphql';
+import { CoreOutput } from 'src/common/dtos/output.dto';
+import { Order } from '../entites/order.entity';
+
+@InputType()
+export class EditOrderInput extends PickType(Order, ['id', 'status']) {}
+
+@ObjectType()
+export class EditOrderOutput extends CoreOutput {}

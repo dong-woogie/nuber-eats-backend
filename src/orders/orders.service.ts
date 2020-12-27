@@ -5,10 +5,11 @@ import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
-import { GetOrderInput } from './dtos/get-order.dto';
+import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
+import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { OrderItem } from './entites/order-item.entity';
-import { Order } from './entites/order.entity';
+import { Order, OrderStatus } from './entites/order.entity';
 
 @Injectable()
 export class OrderService {
@@ -126,24 +127,70 @@ export class OrderService {
     }
   }
 
-  async getOrder(user: User, { id: orderId }: GetOrderInput) {
+  checkOrderRole(user: User, order: Order): void {
+    if (
+      (user.role === UserRole.Client && user.id !== order.customerId) ||
+      (user.role === UserRole.Delivery && user.id !== order.driverId) ||
+      (user.role === UserRole.Client && user.id !== order.restaurant.ownerId)
+    ) {
+      throw new Error("You Can't see that");
+    }
+  }
+
+  async getOrder(
+    user: User,
+    { id: orderId }: GetOrderInput,
+  ): Promise<GetOrderOutput> {
     try {
       const order = await this.orders.findOne(orderId, {
         relations: ['restaurant'],
       });
 
-      if (
-        (user.role === UserRole.Client && user.id !== order.customerId) ||
-        (user.role === UserRole.Delivery && user.id !== order.driverId) ||
-        (user.role === UserRole.Client && user.id !== order.restaurant.ownerId)
-      ) {
-        throw new Error("You Can't see that");
-      }
+      this.checkOrderRole(user, order);
       return { ok: true, order };
     } catch (e) {
       return {
         ok: false,
         error: e.message ? e.message : 'Could not get order',
+      };
+    }
+  }
+
+  checkEditOrderRole(userRole: UserRole, status: OrderStatus): void {
+    if (userRole === UserRole.Client)
+      throw new Error("Can't edit order that role is client");
+    if (
+      userRole === UserRole.Owner &&
+      !(status === OrderStatus.Cooking || status === OrderStatus.Cooked)
+    ) {
+      throw new Error("Can't edit order wrong role");
+    }
+    if (
+      userRole === UserRole.Delivery &&
+      !(status === OrderStatus.PickUp || status === OrderStatus.Drivered)
+    ) {
+      throw new Error("Can't edit order wrong role");
+    }
+  }
+
+  async editOrder(
+    user: User,
+    { status, id: orderId }: EditOrderInput,
+  ): Promise<EditOrderOutput> {
+    try {
+      const order = await this.orders.findOne(orderId, {
+        relations: ['restaurant'],
+      });
+
+      this.checkOrderRole(user, order);
+      this.checkEditOrderRole(user.role, status);
+
+      await this.orders.save([{ id: orderId, status }]);
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e.message ? e.message : 'Could not edit order',
       };
     }
   }
