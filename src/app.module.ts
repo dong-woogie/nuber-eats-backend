@@ -62,10 +62,16 @@ import { OrderItem } from './orders/entites/order-item.entity';
       ],
     }),
     GraphQLModule.forRoot({
+      installSubscriptionHandlers: true,
       autoSchemaFile: true,
-      context: ({ req }) => ({
-        user: req['user'],
-      }),
+      context: ({ req, connection }) => {
+        if (req) {
+          return { user: req['user'] };
+        } else {
+          console.log(connection);
+          return connection;
+        }
+      },
     }),
     JwtModule.forRoot({
       privateKey: process.env['PRIVATE_KEY'],
