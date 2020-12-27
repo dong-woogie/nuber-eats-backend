@@ -51,16 +51,18 @@ export class OrderResolver {
     return this.orderService.editOrder(user, editOrderInput);
   }
 
-  @Subscription(type => String)
-  handler() {
-    return pubsub.asyncIterator('HANDLER');
-  }
-
   @Mutation(returns => Boolean)
   asd() {
     pubsub.publish('HANDLER', {
       handler: 'Handler!',
     });
     return true;
+  }
+
+  @Subscription(type => String)
+  @Roles(['Any'])
+  handler(@AuthUser() user: User) {
+    console.log(user);
+    return pubsub.asyncIterator('HANDLER');
   }
 }
