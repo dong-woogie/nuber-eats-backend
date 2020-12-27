@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
-import { NEW_PENDING_ORDERS, PUB_SUB } from 'src/common/common.constants';
+import {
+  NEW_COOKED_ORDER,
+  NEW_PENDING_ORDER,
+  NEW_UPDATE_ORDER,
+  PUB_SUB,
+} from 'src/common/common.constants';
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
@@ -81,8 +86,7 @@ export class OrderService {
           total,
         }),
       );
-      console.log(restaurant);
-      await this.pubsub.publish(NEW_PENDING_ORDERS, {
+      await this.pubsub.publish(NEW_PENDING_ORDER, {
         pendingOrders: { order: newOrder, ownerId: restaurant.ownerId },
       });
 
@@ -186,14 +190,24 @@ export class OrderService {
     { status, id: orderId }: EditOrderInput,
   ): Promise<EditOrderOutput> {
     try {
-      const order = await this.orders.findOne(orderId, {
-        relations: ['restaurant'],
-      });
+      const order = await this.orders.findOne(orderId);
 
       this.checkOrderRole(user, order);
       this.checkEditOrderRole(user.role, status);
 
       await this.orders.save([{ id: orderId, status }]);
+
+      const newOrder = { ...order, status };
+      if (user.role === UserRole.Owner && status === OrderStatus.Cooked) {
+        await this.pubsub.publish(NEW_COOKED_ORDER, {
+          cookedOrders: newOrder,
+        });
+      }
+
+      await this.pubsub.publish(NEW_UPDATE_ORDER, {
+        orderUpdates: newOrder,
+      });
+
       return { ok: true };
     } catch (e) {
       return {
