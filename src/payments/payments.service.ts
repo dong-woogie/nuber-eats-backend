@@ -42,4 +42,12 @@ export class PaymentService {
       };
     }
   }
+
+  async getPayments(owner: User) {
+    const payments = await this.payments.find({ user: owner });
+    return {
+      ok: true,
+      payments,
+    };
+  }
 }
