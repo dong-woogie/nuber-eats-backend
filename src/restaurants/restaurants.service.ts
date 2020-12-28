@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { FindConditions, Raw, Repository } from 'typeorm';
+import { FindConditions, FindManyOptions, Raw, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput } from './dtos/category.dto';
 import { CreateDishInput, CreateDishOutput } from './dtos/create-dish.dto';
@@ -42,12 +42,13 @@ export class RestaurantSerivce {
     createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
     const { name, categoryName, address } = createRestaurantInput;
-    const newRestaurant = this.restaurants.create({ name, address });
+    const restaurant = this.restaurants.create({ name, address });
     const category = await this.categorys.findOrCreate(categoryName);
 
-    newRestaurant.owner = owner;
-    newRestaurant.category = category;
-    await this.restaurants.save(newRestaurant);
+    restaurant.owner = owner;
+    restaurant.category = category;
+
+    await this.restaurants.save(restaurant);
 
     return { ok: true };
   }
@@ -115,11 +116,7 @@ export class RestaurantSerivce {
 
   async allRestaurants({ page }: RestaurantsInput): Promise<RestaurantsOutput> {
     try {
-      const results = await this.baseResults<Restaurant>({
-        schema: this.restaurants,
-        page,
-        take: 3,
-      });
+      const results = await this.baseResults({ page });
       return {
         ok: true,
         ...results,
@@ -161,9 +158,7 @@ export class RestaurantSerivce {
         totalPages,
         totalResults,
       } = await this.baseResults({
-        schema: this.restaurants,
         page,
-        take: 5,
         where: {
           name: Raw(name => `${name} ILIKE '%${query}%'`),
         },
@@ -188,12 +183,7 @@ export class RestaurantSerivce {
         results: restaurants,
         totalPages,
         totalResults,
-      } = await this.baseResults<Restaurant>({
-        schema: this.restaurants,
-        page,
-        take: 3,
-        where: { category },
-      });
+      } = await this.baseResults({ page, where: { category } });
 
       return {
         ok: true,
@@ -210,22 +200,24 @@ export class RestaurantSerivce {
     }
   }
 
-  async baseResults<T>(baseResultsInput: {
-    schema: Repository<T>;
+  async baseResults(baseResultsInput: {
     page?: number;
     take?: number;
-    where?: FindConditions<T>;
+    where?: FindConditions<Restaurant>;
+    order?: FindManyOptions<Restaurant>;
   }): Promise<{
     totalResults: number;
     totalPages: number;
-    results: T[];
+    results: Restaurant[];
   }> {
-    const { schema, page = 1, take, where } = baseResultsInput;
-    const [results, totalResults] = await schema.findAndCount({
+    const { page = 1, take = 10, where } = baseResultsInput;
+    const [results, totalResults] = await this.restaurants.findAndCount({
       where,
       take,
       skip: take * (page - 1),
+      order: { isPromoted: 'DESC' },
     });
+
     const totalPages = take ? Math.ceil(totalResults / take) : 1;
     return {
       totalPages,

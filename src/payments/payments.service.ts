@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import {
   CreatePaymentInput,
   CreatePaymentOutput,
@@ -14,7 +15,7 @@ export class PaymentService {
   constructor(
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(Restaurant)
-    private readonly restaurnats: Repository<Restaurant>,
+    private readonly restaurants: Repository<Restaurant>,
   ) {}
 
   async createPayment(
@@ -22,11 +23,17 @@ export class PaymentService {
     { transactionId, restaurantId }: CreatePaymentInput,
   ): Promise<CreatePaymentOutput> {
     try {
-      const restaurant = await this.restaurnats.findOne(restaurantId);
+      const restaurant = await this.restaurants.findOne(restaurantId);
       if (!restaurant) throw new Error('Restaurant not found');
       if (restaurant.ownerId !== owner.id)
         throw new Error('You are not owner of this restaurant');
 
+      restaurant.isPromoted = true;
+      const date = new Date();
+      date.setDate(date.getDate() + 7);
+      restaurant.promotedUntil = date;
+
+      await this.restaurants.save(restaurant);
       await this.payments.save(
         this.payments.create({
           transactionId,
@@ -49,5 +56,19 @@ export class PaymentService {
       ok: true,
       payments,
     };
+  }
+
+  @Interval(1000 * 60 * 60 * 24)
+  async checkPromotedRestaurants() {
+    const restaurants = await this.restaurants.find({
+      isPromoted: true,
+      promotedUntil: LessThan(new Date()),
+    });
+
+    restaurants.forEach(async restaurant => {
+      restaurant.isPromoted = false;
+      restaurant.promotedUntil = null;
+      await this.restaurants.save(restaurant);
+    });
   }
 }
