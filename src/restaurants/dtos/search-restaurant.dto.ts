@@ -6,13 +6,13 @@ import {
 import { Restaurant } from '../entities/restaurant.entity';
 
 @InputType()
-export class SearchRestaurantInput extends PaginationInput {
+export class SearchRestaurantsInput extends PaginationInput {
   @Field(type => String)
   query: string;
 }
 
 @ObjectType()
-export class SearchRestaurantOutput extends PaginationOutput {
+export class SearchRestaurantsOutput extends PaginationOutput {
   @Field(type => [Restaurant], { nullable: true })
   restaurants?: Restaurant[];
 }

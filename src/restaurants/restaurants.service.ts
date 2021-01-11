@@ -19,8 +19,8 @@ import {
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import {
-  SearchRestaurantInput,
-  SearchRestaurantOutput,
+  SearchRestaurantsInput,
+  SearchRestaurantsOutput,
 } from './dtos/search-restaurant.dto';
 import { Category } from './entities/category.entity';
 import { Dish } from './entities/dish.entity';
@@ -106,7 +106,7 @@ export class RestaurantSerivce {
     return restaurant;
   }
 
-  async allCategoies(): Promise<AllCategoriesOutput> {
+  async allCategories(): Promise<AllCategoriesOutput> {
     const categories = await this.categorys.find();
     return {
       ok: true,
@@ -134,7 +134,7 @@ export class RestaurantSerivce {
   }: RestaurantInput): Promise<RestaurantOutput> {
     try {
       const result = await this.restaurants.findOneOrFail(restaurantId, {
-        relations: ['menu'],
+        relations: ['menu', 'category'],
       });
       return { ok: true, result };
     } catch {
@@ -145,19 +145,9 @@ export class RestaurantSerivce {
   async searchRestaurantByName({
     query,
     page,
-  }: SearchRestaurantInput): Promise<SearchRestaurantOutput> {
+  }: SearchRestaurantsInput): Promise<SearchRestaurantsOutput> {
     try {
-      this.restaurants.find({
-        where: {
-          name: Raw(name => `${name} ILIKE '%${query}%'`),
-        },
-      });
-
-      const {
-        results: restaurants,
-        totalPages,
-        totalResults,
-      } = await this.baseResults({
+      const { restaurants, totalPages, totalResults } = await this.baseResults({
         page,
         where: {
           name: Raw(name => `${name} ILIKE '%${query}%'`),
@@ -179,11 +169,10 @@ export class RestaurantSerivce {
       const category = await this.categorys.findOne({ slug });
       if (!category) throw new Error('Could not found');
 
-      const {
-        results: restaurants,
-        totalPages,
-        totalResults,
-      } = await this.baseResults({ page, where: { category } });
+      const { restaurants, totalPages, totalResults } = await this.baseResults({
+        page,
+        where: { category },
+      });
 
       return {
         ok: true,
@@ -208,21 +197,22 @@ export class RestaurantSerivce {
   }): Promise<{
     totalResults: number;
     totalPages: number;
-    results: Restaurant[];
+    restaurants: Restaurant[];
   }> {
-    const { page = 1, take = 10, where } = baseResultsInput;
-    const [results, totalResults] = await this.restaurants.findAndCount({
+    const { page = 1, take = 3, where } = baseResultsInput;
+    const [restaurants, totalResults] = await this.restaurants.findAndCount({
       where,
       take,
       skip: take * (page - 1),
       order: { isPromoted: 'DESC' },
+      relations: ['category'],
     });
 
     const totalPages = take ? Math.ceil(totalResults / take) : 1;
     return {
       totalPages,
       totalResults,
-      results,
+      restaurants,
     };
   }
 

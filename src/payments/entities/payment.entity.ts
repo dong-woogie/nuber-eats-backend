@@ -20,7 +20,7 @@ export class Payment extends CoreEntity {
   userId: number;
 
   @Field(type => Restaurant)
-  @ManyToOne(type => Restaurant)
+  @ManyToOne(type => Restaurant, { onDelete: 'CASCADE' })
   restaurant: Restaurant;
 
   @Field(type => Int)

@@ -30,8 +30,8 @@ import {
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import {
-  SearchRestaurantInput,
-  SearchRestaurantOutput,
+  SearchRestaurantsInput,
+  SearchRestaurantsOutput,
 } from './dtos/search-restaurant.dto';
 import { Category } from './entities/category.entity';
 import { Dish } from './entities/dish.entity';
@@ -85,11 +85,13 @@ export class RestaurantResolver {
     return this.restaurantSerivce.findRestaurantById(restaurantInput);
   }
 
-  @Query(returns => SearchRestaurantOutput)
-  searchRestaurant(
-    @Args('input') searchRestaurantInput: SearchRestaurantInput,
+  @Query(returns => SearchRestaurantsOutput)
+  searchRestaurants(
+    @Args('input') searchRestaurantsInput: SearchRestaurantsInput,
   ) {
-    return this.restaurantSerivce.searchRestaurantByName(searchRestaurantInput);
+    return this.restaurantSerivce.searchRestaurantByName(
+      searchRestaurantsInput,
+    );
   }
 }
 
@@ -103,8 +105,8 @@ export class CategoryResolver {
   }
 
   @Query(returns => AllCategoriesOutput)
-  allCategoies() {
-    return this.restaurantService.allCategoies();
+  allCategories() {
+    return this.restaurantService.allCategories();
   }
 
   @Query(returns => CategoryOutput)
