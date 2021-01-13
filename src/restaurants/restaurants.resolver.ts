@@ -27,6 +27,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { MyRestaurantsOutput } from './dtos/my-restaurants.dto';
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import {
@@ -92,6 +93,12 @@ export class RestaurantResolver {
     return this.restaurantSerivce.searchRestaurantByName(
       searchRestaurantsInput,
     );
+  }
+
+  @Query(returns => MyRestaurantsOutput)
+  @Roles(['Owner'])
+  myRestaurants(@AuthUser() owner: User) {
+    return this.restaurantSerivce.myRestaurants(owner);
   }
 }
 

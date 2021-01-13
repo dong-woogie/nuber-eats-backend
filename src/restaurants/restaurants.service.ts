@@ -16,6 +16,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { MyRestaurantsOutput } from './dtos/my-restaurants.dto';
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
 import {
@@ -157,6 +158,13 @@ export class RestaurantSerivce {
     } catch {
       return { ok: false, error: 'Could not search for restaurants' };
     }
+  }
+
+  async myRestaurants(owner: User): Promise<MyRestaurantsOutput> {
+    const restaurants = await this.restaurants.find({
+      where: { owner },
+    });
+    return { ok: true, restaurants };
   }
 
   async restaurantCountByCategory(category: Category): Promise<number> {
