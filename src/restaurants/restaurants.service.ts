@@ -42,8 +42,8 @@ export class RestaurantSerivce {
     owner: User,
     createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
-    const { name, categoryName, address } = createRestaurantInput;
-    const restaurant = this.restaurants.create({ name, address });
+    const { name, categoryName, address, coverImg } = createRestaurantInput;
+    const restaurant = this.restaurants.create({ name, address, coverImg });
     const category = await this.categorys.findOrCreate(categoryName);
 
     restaurant.owner = owner;
@@ -163,6 +163,7 @@ export class RestaurantSerivce {
   async myRestaurants(owner: User): Promise<MyRestaurantsOutput> {
     const restaurants = await this.restaurants.find({
       where: { owner },
+      relations: ['category'],
     });
     return { ok: true, restaurants };
   }
