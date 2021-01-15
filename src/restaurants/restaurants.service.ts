@@ -49,9 +49,9 @@ export class RestaurantSerivce {
     restaurant.owner = owner;
     restaurant.category = category;
 
-    await this.restaurants.save(restaurant);
+    const newRestaurant = await this.restaurants.save(restaurant);
 
-    return { ok: true };
+    return { ok: true, restaurantId: newRestaurant.id };
   }
 
   async editRestaurant(
@@ -164,6 +164,9 @@ export class RestaurantSerivce {
     const restaurants = await this.restaurants.find({
       where: { owner },
       relations: ['category'],
+      order: {
+        id: 'DESC',
+      },
     });
     return { ok: true, restaurants };
   }
