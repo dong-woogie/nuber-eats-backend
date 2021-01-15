@@ -16,6 +16,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { MyRestaurantInput, MyRestaurantOutput } from './dtos/my-restaurant';
 import { MyRestaurantsOutput } from './dtos/my-restaurants.dto';
 import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dio';
@@ -169,6 +170,17 @@ export class RestaurantSerivce {
       },
     });
     return { ok: true, restaurants };
+  }
+
+  async myRestaurant({
+    restaurantId,
+  }: MyRestaurantInput): Promise<MyRestaurantOutput> {
+    try {
+      const restaurant = await this.restaurants.findOneOrFail(restaurantId);
+      return { ok: true, restaurant };
+    } catch {
+      return { ok: false, error: 'Not Found Restaurant' };
+    }
   }
 
   async restaurantCountByCategory(category: Category): Promise<number> {
