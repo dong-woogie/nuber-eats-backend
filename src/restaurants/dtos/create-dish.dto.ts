@@ -7,7 +7,7 @@ import { Dish } from '../entities/dish.entity';
 export class CreateDishInput extends PickType(Dish, [
   'name',
   'price',
-  'descripition',
+  'description',
   'options',
 ]) {
   @Field(type => Number)

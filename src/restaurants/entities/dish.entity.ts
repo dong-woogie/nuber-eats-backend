@@ -51,7 +51,7 @@ export class Dish extends CoreEntity {
   @Field(type => String)
   @Column()
   @IsString()
-  descripition: string;
+  description: string;
 
   @Field(type => String, { nullable: true })
   @Column({ nullable: true })
