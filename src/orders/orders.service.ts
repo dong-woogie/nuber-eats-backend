@@ -52,8 +52,8 @@ export class OrderService {
               dishOption => dishOption.name === option.name,
             );
             if (!dishOption) return;
-            if (dishOption.extra) {
-              dishFinalPrice += dishOption.extra;
+            if (dishOption.price) {
+              dishFinalPrice += dishOption.price;
               return;
             }
             if (!dishOption.choices) return;
@@ -62,8 +62,8 @@ export class OrderService {
               choice => choice.name === option.choice,
             );
             if (!choiceOption) return;
-            if (!choiceOption.extra) return;
-            dishFinalPrice += choiceOption.extra;
+            if (!choiceOption.price) return;
+            dishFinalPrice += choiceOption.price;
           });
 
           const orderItem = await this.orderItems.save(

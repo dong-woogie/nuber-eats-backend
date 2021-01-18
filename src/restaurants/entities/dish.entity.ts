@@ -7,18 +7,24 @@ import { Restaurant } from './restaurant.entity';
 @InputType('DishChoiceInputType', { isAbstract: true })
 @ObjectType()
 class DishChoice {
+  @Field(type => Int, { nullable: true })
+  id?: number;
+
   @Field(type => String)
   @Column()
   name: string;
 
   @Field(type => Int, { nullable: true })
   @Column({ nullable: true })
-  extra?: number;
+  price?: number;
 }
 
 @InputType('DishOptionInputType', { isAbstract: true })
 @ObjectType()
 export class DishOption {
+  @Field(type => Int, { nullable: true })
+  id?: number;
+
   @Field(type => String)
   @Column()
   @IsString()
@@ -27,7 +33,7 @@ export class DishOption {
   @Field(type => Number, { nullable: true })
   @Column({ nullable: true })
   @IsNumber()
-  extra?: number;
+  price?: number;
 
   @Field(type => [DishChoice], { nullable: true })
   @Column({ nullable: true })
