@@ -10,6 +10,8 @@ export class OrderItemOption {
   name: string;
   @Field(type => String, { nullable: true })
   choice?: string;
+  @Field(type => Number, { nullable: true })
+  price?: number;
 }
 @InputType('OrderItemInputType', { isAbstract: true })
 @ObjectType()

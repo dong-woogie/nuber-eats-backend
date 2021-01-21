@@ -177,7 +177,7 @@ export class RestaurantSerivce {
   }: MyRestaurantInput): Promise<MyRestaurantOutput> {
     try {
       const restaurant = await this.restaurants.findOneOrFail(restaurantId, {
-        relations: ['category', 'menu', 'orders'],
+        relations: ['category', 'orders', 'menu'],
       });
       return { ok: true, restaurant };
     } catch {
@@ -251,11 +251,10 @@ export class RestaurantSerivce {
         owner.id,
         createDishInput.restaurantId,
       );
-      await this.dishes.save(
+      const dish = await this.dishes.save(
         this.dishes.create({ ...createDishInput, restaurant }),
       );
-
-      return { ok: true };
+      return { ok: true, dish };
     } catch (e) {
       return {
         ok: false,
