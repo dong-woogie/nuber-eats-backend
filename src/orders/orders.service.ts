@@ -90,8 +90,7 @@ export class OrderService {
       await this.pubsub.publish(NEW_PENDING_ORDER, {
         pendingOrders: { order: newOrder, ownerId: restaurant.ownerId },
       });
-
-      return { ok: true };
+      return { ok: true, orderId: newOrder.id };
     } catch (e) {
       return { ok: false, error: 'Cound not create order' };
     }
