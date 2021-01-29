@@ -64,7 +64,11 @@ export class Order extends CoreEntity {
   restaurant?: Restaurant;
 
   @Field(type => [OrderItem], { nullable: true })
-  @ManyToMany(type => OrderItem, { nullable: true, eager: true })
+  @ManyToMany(type => OrderItem, {
+    nullable: true,
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinTable()
   items?: OrderItem[];
 

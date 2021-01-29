@@ -10,7 +10,7 @@ import {
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
@@ -70,6 +70,7 @@ export class OrderService {
             this.orderItems.create({
               dish,
               options: curr.options,
+              total: dishFinalPrice,
             }),
           );
           (await prev).orderItems.push(orderItem);
@@ -143,7 +144,7 @@ export class OrderService {
     if (
       (user.role === UserRole.Client && user.id !== order.customerId) ||
       (user.role === UserRole.Delivery && user.id !== order.driverId) ||
-      (user.role === UserRole.Client && user.id !== order.restaurant.ownerId)
+      (user.role === UserRole.Owner && user.id !== order.restaurant.ownerId)
     ) {
       throw new Error("You Can't see that");
     }
@@ -155,10 +156,18 @@ export class OrderService {
   ): Promise<GetOrderOutput> {
     try {
       const order = await this.orders.findOne(orderId, {
-        relations: ['restaurant'],
+        relations: ['restaurant', 'restaurant.owner', 'items'],
       });
-
       this.checkOrderRole(user, order);
+
+      // const order = await getRepository(Order)
+      //   .createQueryBuilder('order')
+      //   .where('order.id = :id', { id: orderId })
+      //   .leftJoinAndSelect('order.items', 'items')
+      //   .leftJoinAndSelect('order.restaurant', 'restaurant')
+      //   .leftJoinAndSelect('restaurant.owner', 'owner')
+      //   .getOne();
+
       return { ok: true, order };
     } catch (e) {
       return {

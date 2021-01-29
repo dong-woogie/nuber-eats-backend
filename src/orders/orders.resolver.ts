@@ -68,13 +68,13 @@ export class OrderResolver {
     resolve: ({ pendingOrders }) => pendingOrders.order,
   })
   @Roles(['Owner'])
-  pendingOrders() {
+  pendingOrder() {
     return this.pubsub.asyncIterator(NEW_PENDING_ORDER);
   }
 
   @Subscription(type => Order)
   @Roles(['Delivery'])
-  cookedOrders() {
+  cookedOrder() {
     return this.pubsub.asyncIterator(NEW_COOKED_ORDER);
   }
 
@@ -93,9 +93,12 @@ export class OrderResolver {
       }
       return order.id === input.id;
     },
+    resolve: ({ orderUpdates }) => {
+      return orderUpdates;
+    },
   })
   @Roles(['Any'])
-  orderUpdates(
+  orderUpdate(
     @AuthUser() user: User,
     @Args('input') orderUpdatesInput: OrderUpdatesInput,
   ) {
