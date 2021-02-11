@@ -42,6 +42,10 @@ export class User extends CoreEntity {
   @Column({ default: false })
   verified: boolean;
 
+  @Field(type => String, { nullable: true })
+  @Column({ nullable: true })
+  address?: string;
+
   @Field(type => [Restaurant])
   @OneToMany(type => Restaurant, restaurant => restaurant.owner)
   restaurants: Restaurant[];

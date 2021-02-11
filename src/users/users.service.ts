@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
+import {
+  CreateAddressInput,
+  CreateAddressOutput,
+} from './dtos/create-address.dto';
 import { CreateAccountInput } from './dtos/create-user.dto';
 import { EditProfileInput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
@@ -128,5 +132,15 @@ export class UserService {
         error: 'Verification Not Found',
       };
     }
+  }
+
+  async createAddress(
+    userId: number,
+    { address }: CreateAddressInput,
+  ): Promise<CreateAddressOutput> {
+    const user = await this.users.findOne(userId);
+    user.address = address;
+    const newUser = await this.users.save(user);
+    return { ok: true, user: newUser };
   }
 }

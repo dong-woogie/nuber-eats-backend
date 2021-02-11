@@ -4,6 +4,10 @@ import { AuthUser } from 'src/auth/auth-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Roles } from 'src/auth/role.decorator';
 import {
+  CreateAddressInput,
+  CreateAddressOutput,
+} from './dtos/create-address.dto';
+import {
   CreateAccountInput,
   CreateAccountOutput,
 } from './dtos/create-user.dto';
@@ -52,5 +56,14 @@ export class UserResolver {
     @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
     return this.usersService.editUserProfile(authUser.id, editProfileInput);
+  }
+
+  @Mutation(returns => CreateAddressOutput)
+  @Roles(['Client'])
+  async createAddress(
+    @AuthUser() authUser: User,
+    @Args('input') createAddressInput: CreateAddressInput,
+  ) {
+    return this.usersService.createAddress(authUser.id, createAddressInput);
   }
 }
