@@ -6,6 +6,9 @@ import { User } from '../entities/user.entity';
 export class CreateAddressInput {
   @Field(type => String)
   address: string;
+
+  @Field(type => String)
+  detailAddress: string;
 }
 
 @ObjectType()

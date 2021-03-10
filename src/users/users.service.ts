@@ -14,6 +14,7 @@ import { UserProfileOutput } from './dtos/user-profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
+import { CommonService } from 'src/common/common.service';
 
 @Injectable()
 export class UserService {
@@ -23,6 +24,7 @@ export class UserService {
     private readonly verifications: Repository<Verification>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly commonService: CommonService,
   ) {}
 
   async createAccount({
@@ -136,10 +138,12 @@ export class UserService {
 
   async createAddress(
     userId: number,
-    { address }: CreateAddressInput,
+    { address, detailAddress }: CreateAddressInput,
   ): Promise<CreateAddressOutput> {
     const user = await this.users.findOne(userId);
-    user.address = address;
+    user.address = address + ' ' + detailAddress;
+    user.position = await this.commonService.getPosition(address);
+
     const newUser = await this.users.save(user);
     return { ok: true, user: newUser };
   }

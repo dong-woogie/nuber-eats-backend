@@ -46,6 +46,13 @@ export class User extends CoreEntity {
   @Column({ nullable: true })
   address?: string;
 
+  @Column('geometry', {
+    nullable: true,
+    spatialFeatureType: 'Point',
+    srid: 4326,
+  })
+  position: object;
+
   @Field(type => [Restaurant])
   @OneToMany(type => Restaurant, restaurant => restaurant.owner)
   restaurants: Restaurant[];
