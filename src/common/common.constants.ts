@@ -6,3 +6,4 @@ export const NEW_UPDATE_ORDER = 'NEW_UPDATE_ORDER';
 export const S3_BUCKET_NAME = 'S3_BUCKET_NAME';
 export const S3_ACCESS_KEY = 'S3_ACCESS_KEY';
 export const S3_SECRET_KEY = 'S3_SECRET_KEY';
+export const GOOGLE_MAP_API_KEY = 'GOOGLE_MAP_API_KEY';

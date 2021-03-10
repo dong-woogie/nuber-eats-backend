@@ -42,6 +42,7 @@ import { UploadsModule } from './uploads/uploads.module';
         S3_ACCESS_KEY: Joi.string().required(),
         S3_SECRET_KEY: Joi.string().required(),
         S3_BUCKET_NAME: Joi.string().required(),
+        GOOGLE_MAP_API_KEY: Joi.string().required(),
       }),
     }),
     TypeOrmModule.forRoot({
