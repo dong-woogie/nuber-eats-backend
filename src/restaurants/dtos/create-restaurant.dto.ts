@@ -12,6 +12,9 @@ export class CreateRestaurantInput extends PickType(Restaurant, [
 
   @Field(type => String, { nullable: true })
   coverImg?: string;
+
+  @Field(type => String, { nullable: true })
+  detailAddress: string;
 }
 
 @ObjectType()

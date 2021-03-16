@@ -21,6 +21,13 @@ export class Restaurant extends CoreEntity {
   @IsString()
   address: string;
 
+  @Column('geometry', {
+    nullable: true,
+    spatialFeatureType: 'Point',
+    srid: 4326,
+  })
+  position: object;
+
   @Field(type => String, { nullable: true })
   @Column({ nullable: true })
   @IsString()
