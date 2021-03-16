@@ -78,8 +78,12 @@ export class RestaurantResolver {
   }
 
   @Query(returns => RestaurantsOutput)
-  restaurants(@Args('input') restaurantsInput: RestaurantsInput) {
-    return this.restaurantSerivce.allRestaurants(restaurantsInput);
+  @Roles(['Client'])
+  restaurants(
+    @AuthUser() user: User,
+    @Args('input') restaurantsInput: RestaurantsInput,
+  ) {
+    return this.restaurantSerivce.allRestaurants(user, restaurantsInput);
   }
 
   @Query(returns => RestaurantOutput)
@@ -88,10 +92,13 @@ export class RestaurantResolver {
   }
 
   @Query(returns => SearchRestaurantsOutput)
+  @Roles(['Client'])
   searchRestaurants(
+    @AuthUser() user: User,
     @Args('input') searchRestaurantsInput: SearchRestaurantsInput,
   ) {
     return this.restaurantSerivce.searchRestaurantByName(
+      user,
       searchRestaurantsInput,
     );
   }
@@ -124,8 +131,12 @@ export class CategoryResolver {
   }
 
   @Query(returns => CategoryOutput)
-  category(@Args('input') categoryInput: CategoryInput) {
-    return this.restaurantService.findCategoryBySlug(categoryInput);
+  @Roles(['Client'])
+  category(
+    @AuthUser() user: User,
+    @Args('input') categoryInput: CategoryInput,
+  ) {
+    return this.restaurantService.findCategoryBySlug(user, categoryInput);
   }
 }
 

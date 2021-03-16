@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CommonService } from 'src/common/common.service';
 import { User } from 'src/users/entities/user.entity';
-import { FindConditions, FindManyOptions, Raw, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput } from './dtos/category.dto';
 import { CreateDishInput, CreateDishOutput } from './dtos/create-dish.dto';
@@ -37,18 +38,30 @@ export class RestaurantSerivce {
     private readonly categorys: CategoryRepository,
     @InjectRepository(Dish)
     private readonly dishes: Repository<Dish>,
+    private readonly commonService: CommonService,
   ) {}
 
   async createRestaurant(
     owner: User,
     createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
-    const { name, categoryName, address, coverImg } = createRestaurantInput;
-    const restaurant = this.restaurants.create({ name, address, coverImg });
+    const {
+      name,
+      categoryName,
+      address,
+      coverImg,
+      detailAddress,
+    } = createRestaurantInput;
+    const restaurant = this.restaurants.create({
+      name,
+      address: address + ' ' + detailAddress,
+      coverImg,
+    });
     const category = await this.categorys.findOrCreate(categoryName);
 
     restaurant.owner = owner;
     restaurant.category = category;
+    restaurant.position = await this.commonService.getPosition(address);
 
     const newRestaurant = await this.restaurants.save(restaurant);
 
@@ -116,13 +129,24 @@ export class RestaurantSerivce {
     };
   }
 
-  async allRestaurants({ page }: RestaurantsInput): Promise<RestaurantsOutput> {
+  async allRestaurants(
+    user: User,
+    { skip, take }: RestaurantsInput,
+  ): Promise<RestaurantsOutput> {
     try {
-      const results = await this.baseResults({ page });
-      return {
-        ok: true,
-        ...results,
-      };
+      const restaurants = await this.restaurants
+        .createQueryBuilder('restaurant')
+        .where(
+          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+        )
+        .orderBy('restaurant.isPromoted', 'DESC')
+        .addOrderBy('restaurant.id')
+        .skip(skip)
+        .take(take)
+        .setParameters({ position: JSON.stringify(user.position) })
+        .getMany();
+
+      return { ok: true, restaurants };
     } catch {
       return {
         ok: false,
@@ -144,18 +168,25 @@ export class RestaurantSerivce {
     }
   }
 
-  async searchRestaurantByName({
-    query,
-    page,
-  }: SearchRestaurantsInput): Promise<SearchRestaurantsOutput> {
+  async searchRestaurantByName(
+    user: User,
+    { query, take, skip }: SearchRestaurantsInput,
+  ): Promise<SearchRestaurantsOutput> {
     try {
-      const { restaurants, totalPages, totalResults } = await this.baseResults({
-        page,
-        where: {
-          name: Raw(name => `${name} ILIKE '%${query}%'`),
-        },
-      });
-      return { ok: true, totalPages, totalResults, restaurants };
+      const restaurants = await this.restaurants
+        .createQueryBuilder('restaurant')
+        .where(
+          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+        )
+        .andWhere(`restaurant.name LIKE :query`, { query: `%${query}%` })
+        .orderBy('restaurant.isPromoted', 'DESC')
+        .addOrderBy('restaurant.id')
+        .skip(skip)
+        .take(take)
+        .setParameters({ position: JSON.stringify(user.position) })
+        .getMany();
+
+      return { ok: true, restaurants };
     } catch {
       return { ok: false, error: 'Could not search for restaurants' };
     }
@@ -189,22 +220,30 @@ export class RestaurantSerivce {
     return this.restaurants.count({ category });
   }
 
-  async findCategoryBySlug(categoryInput: CategoryInput) {
+  async findCategoryBySlug(user: User, categoryInput: CategoryInput) {
     try {
-      const { slug, page } = categoryInput;
+      const { slug, skip, take } = categoryInput;
       const category = await this.categorys.findOne({ slug });
       if (!category) throw new Error('Could not found');
 
-      const { restaurants, totalPages, totalResults } = await this.baseResults({
-        page,
-        where: { category },
-      });
+      const restaurants = await this.restaurants
+        .createQueryBuilder('restaurant')
+        .innerJoinAndSelect('restaurant.category', 'category')
+        .where('category.slug = :slug', { slug })
+
+        .andWhere(
+          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+        )
+        .orderBy('restaurant.isPromoted', 'DESC')
+        .addOrderBy('restaurant.id')
+        .skip(skip)
+        .take(take)
+        .setParameters({ position: JSON.stringify(user.position) })
+        .getMany();
 
       return {
         ok: true,
         category,
-        totalPages,
-        totalResults,
         restaurants,
       };
     } catch (e) {
@@ -213,33 +252,6 @@ export class RestaurantSerivce {
         error: e.message ? e.message : 'Could not load category',
       };
     }
-  }
-
-  async baseResults(baseResultsInput: {
-    page?: number;
-    take?: number;
-    where?: FindConditions<Restaurant>;
-    order?: FindManyOptions<Restaurant>;
-  }): Promise<{
-    totalResults: number;
-    totalPages: number;
-    restaurants: Restaurant[];
-  }> {
-    const { page = 1, take = 3, where } = baseResultsInput;
-    const [restaurants, totalResults] = await this.restaurants.findAndCount({
-      where,
-      take,
-      skip: take * (page - 1),
-      order: { isPromoted: 'DESC' },
-      relations: ['category'],
-    });
-
-    const totalPages = take ? Math.ceil(totalResults / take) : 1;
-    return {
-      totalPages,
-      totalResults,
-      restaurants,
-    };
   }
 
   async createDish(
