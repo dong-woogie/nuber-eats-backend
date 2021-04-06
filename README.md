@@ -1,57 +1,23 @@
-## Number Eats
+# Nuber-Eats Backend Clone Coding
 
-The Backend of Nuber Eats Clone
+> 우버이츠를 클론코딩한 음식배달서비스 웹 어플리케이션입니다.
 
-## User Model:
+# Project Stack
 
-- id
-- createdAt
-- updatedAt
+* Node.js
+* Typescript
+* Nest.js
+* Apollo GraphQL
+* TypeORM
+* PostgreSQL
 
-- email
-- password
-- role(client|owner|delivery)
+## 주요기능
 
-## User CRUD:
+* DB MODEL RELATIONSHIP
+* USER CRUD
+* RESTAURANT CRUD
+* DISH CRUD
+* ORDER CRUD
+* ORDER SUBSCRIPTIONS
+* IMAGE UPLOADS ( AWS S3 )
 
-- Create Account
-- Log In
-- See Profile
-- Edit Profile
-- Verify Email
-
-## Entity 설정 시:
-
-- Field 설정 : Graphql Query
-- Column 설정 : Typeorm ( Database )
-- Validation 설정 : 검사
-
-## Restaurant Model:
-
-- name
-- address
-- category
-- coverImage
-
-## Restaurant CRUD:
-
-- Create Restaurant
-- Edit Restaurant
-- Delete Restaurant
-
-- See Categorys
-- See Restaurants by Category (pagination)
-- See Restaurants (pagination)
-- See Restuarant
-
-## Dish Model:
-
-## Dish CRUD:
-
-- Create Dish
-- Edit Dish
-- Delete Dish
-
-**항상확인하기**
-
-**주석으로 설계하고 코딩하는 거 좋은 거 같다.**
