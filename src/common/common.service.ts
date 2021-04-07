@@ -24,4 +24,18 @@ export class CommonService {
       coordinates: [+geo[0].latitude.toFixed(3), +geo[0].longitude.toFixed(3)],
     };
   }
+
+  async getAddress(lat: number, lng: number) {
+    const geocoder = NodeGeocoder({
+      provider: 'google',
+      apiKey: this.configService.get(GOOGLE_MAP_API_KEY),
+    });
+
+    const address = await geocoder.reverse({ lat, lon: lng });
+    return address;
+  }
+
+  distanceSql(startProperty: string, endProperty: string, km: number) {
+    return `ST_Distance(${startProperty}, ST_GeomFromJSON(:${endProperty})) < ${km}`;
+  }
 }

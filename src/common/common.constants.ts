@@ -3,6 +3,9 @@ export const PUB_SUB = 'PUB_SUB';
 export const NEW_PENDING_ORDER = 'NEW_PENDING_ORDER';
 export const NEW_COOKED_ORDER = 'NEW_COOKED_ORDER';
 export const NEW_UPDATE_ORDER = 'NEW_UPDATE_ORDER';
+export const ANOTHER_DRIVER_TAKE_ORDER = 'ANOTHER_DRIVER_TAKE_ORDER';
+export const PICKUP_ORDER = 'PICKUP_ORDER';
+
 export const S3_BUCKET_NAME = 'S3_BUCKET_NAME';
 export const S3_ACCESS_KEY = 'S3_ACCESS_KEY';
 export const S3_SECRET_KEY = 'S3_SECRET_KEY';
