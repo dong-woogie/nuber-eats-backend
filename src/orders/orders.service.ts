@@ -2,22 +2,32 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
 import {
+  ANOTHER_DRIVER_TAKE_ORDER,
   NEW_COOKED_ORDER,
   NEW_PENDING_ORDER,
   NEW_UPDATE_ORDER,
+  PICKUP_ORDER,
   PUB_SUB,
 } from 'src/common/common.constants';
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
-import { getRepository, Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
+import {
+  GetDriverOrdersInput,
+  GetDriverOrdersOutput,
+} from './dtos/get-driver-orders.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { TakeOrderInput, TakeOrderOutput } from './dtos/take-order.dto';
 import { OrderItem } from './entites/order-item.entity';
 import { Order, OrderStatus } from './entites/order.entity';
+import { CommonService } from 'src/common/common.service';
+import { GetOwnerOrdersInput } from './dtos/get-owner-orders.dto';
+import { GetDriverOrderInput } from './dtos/get-driver-order.dto';
+import { getDistance } from 'src/util';
 
 @Injectable()
 export class OrderService {
@@ -31,6 +41,7 @@ export class OrderService {
     @InjectRepository(OrderItem)
     private readonly orderItems: Repository<OrderItem>,
     @Inject(PUB_SUB) private readonly pubsub: PubSub,
+    private readonly commonService: CommonService,
   ) {}
 
   async createOrder(
@@ -160,20 +171,29 @@ export class OrderService {
       });
       this.checkOrderRole(user, order);
 
-      // const order = await getRepository(Order)
-      //   .createQueryBuilder('order')
-      //   .where('order.id = :id', { id: orderId })
-      //   .leftJoinAndSelect('order.items', 'items')
-      //   .leftJoinAndSelect('order.restaurant', 'restaurant')
-      //   .leftJoinAndSelect('restaurant.owner', 'owner')
-      //   .getOne();
-
       return { ok: true, order };
     } catch (e) {
       return {
         ok: false,
         error: e.message ? e.message : 'Could not get order',
       };
+    }
+  }
+
+  async getOwnerOrders({ restaurantId, statuses }: GetOwnerOrdersInput) {
+    try {
+      const orders = await this.orders
+        .createQueryBuilder('order')
+        .innerJoinAndSelect('order.restaurant', 'restaurant')
+        .innerJoinAndSelect('order.items', 'items')
+        .innerJoinAndSelect('items.dish', 'dish')
+        .where('order.restaurantId = :restaurantId', { restaurantId })
+        .andWhere('order.status IN (:...statuses)', { statuses })
+        .getMany();
+
+      return { ok: true, orders };
+    } catch (e) {
+      return { ok: false, error: e.message };
     }
   }
 
@@ -207,9 +227,16 @@ export class OrderService {
       await this.orders.save([{ id: orderId, status }]);
 
       const newOrder = { ...order, status };
-      if (user.role === UserRole.Owner && status === OrderStatus.Cooked) {
+
+      if (user.role === UserRole.Owner && status === OrderStatus.Cooking) {
         await this.pubsub.publish(NEW_COOKED_ORDER, {
-          cookedOrders: newOrder,
+          cookedOrder: newOrder,
+        });
+      }
+
+      if (user.role === UserRole.Delivery && status === OrderStatus.PickUp) {
+        await this.pubsub.publish(PICKUP_ORDER, {
+          order: newOrder,
         });
       }
 
@@ -241,14 +268,96 @@ export class OrderService {
         },
       ]);
       await this.pubsub.publish(NEW_UPDATE_ORDER, {
-        orderUpdates: { ...order, driver },
+        orderUpdates: { ...order, driver, driverId: driver.id },
       });
-      return { ok: true };
+      await this.pubsub.publish(ANOTHER_DRIVER_TAKE_ORDER, {
+        order,
+      });
+      return { ok: true, order: { ...order, driver, driverId: driver.id } };
     } catch (e) {
       return {
         ok: false,
         error: e.message ? e.message : 'Could not take order',
       };
+    }
+  }
+
+  async getDriverOrders(
+    getDriverOrdersInput: GetDriverOrdersInput,
+  ): Promise<GetDriverOrdersOutput> {
+    try {
+      const { status, lat, lng } = getDriverOrdersInput;
+
+      const driverPosition = {
+        type: 'Point',
+        coordinates: [lat, lng],
+      };
+
+      // 거리가 3km 이하 음식점의 주문만 받는다.
+      const orders = await this.orders
+        .createQueryBuilder('order')
+        .innerJoinAndSelect('order.customer', 'customer')
+        .innerJoinAndSelect('order.restaurant', 'restaurant')
+        .innerJoinAndSelect('order.items', 'items')
+        .innerJoinAndSelect('items.dish', 'dish')
+        .where(
+          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+        )
+        .andWhere(
+          status ? 'order.status = :status' : 'order.status IN (:...status)',
+          {
+            status: status ? status : [OrderStatus.Cooking, OrderStatus.Cooked],
+          },
+        )
+        .orderBy('order.id', 'DESC')
+        .setParameters({ position: JSON.stringify(driverPosition) })
+        .getMany();
+
+      const result = orders.map(order => {
+        const distance = getDistance({ lat, lng }, order.restaurant.position);
+        return { ...order, distance };
+      });
+
+      return { ok: true, orders: result.filter(order => !order.driverId) };
+    } catch (e) {
+      return { ok: false, error: e };
+    }
+  }
+
+  async getDriverOrder({ id, lat, lng }: GetDriverOrderInput) {
+    try {
+      const order = await this.orders.findOne(id, {
+        relations: ['restaurant', 'customer'],
+      });
+      let distance;
+
+      if (lat && lat) {
+        distance = getDistance({ lat, lng }, order.restaurant.position);
+      }
+
+      return { ok: true, order: { ...order, distance } };
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  async getDriverOwnOrders(user: User) {
+    try {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+
+      const orders = await this.orders.find({
+        where: {
+          driver: user,
+          updatedAt: Between(start, end),
+        },
+      });
+
+      return { ok: true, orders };
+    } catch {
+      return { ok: false };
     }
   }
 }
