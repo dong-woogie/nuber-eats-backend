@@ -6,6 +6,7 @@ import { Category } from './category.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Dish } from './dish.entity';
 import { Order } from 'src/orders/entites/order.entity';
+import { PositionEntity } from 'src/common/entities/position.entity';
 
 @InputType('RestaurantInputType', { isAbstract: true })
 @ObjectType()
@@ -21,6 +22,7 @@ export class Restaurant extends CoreEntity {
   @IsString()
   address: string;
 
+  @Field(type => PositionEntity, { nullable: true })
   @Column('geometry', {
     nullable: true,
     spatialFeatureType: 'Point',

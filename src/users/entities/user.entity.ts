@@ -11,6 +11,7 @@ import { IsEnum, IsString } from 'class-validator';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { Order } from 'src/orders/entites/order.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
+import { PositionEntity } from 'src/common/entities/position.entity';
 
 export enum UserRole {
   Client = 'Client',
@@ -46,6 +47,7 @@ export class User extends CoreEntity {
   @Column({ nullable: true })
   address?: string;
 
+  @Field(type => PositionEntity)
   @Column('geometry', {
     nullable: true,
     spatialFeatureType: 'Point',

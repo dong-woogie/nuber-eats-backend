@@ -6,12 +6,14 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import { IsEnum, IsNumber } from 'class-validator';
+import { Feature, GeoJsonTypes, Geometry, Point } from 'geojson';
 import { CoreEntity } from 'src/common/entities/core.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,
   Entity,
+  Index,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -81,4 +83,7 @@ export class Order extends CoreEntity {
   @Column({ type: 'enum', enum: OrderStatus, default: 'Pending' })
   @IsEnum(OrderStatus)
   status: OrderStatus;
+
+  @Field(type => Float, { nullable: true })
+  distance?: number;
 }
