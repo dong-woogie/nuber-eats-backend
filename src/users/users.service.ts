@@ -47,7 +47,6 @@ export class UserService {
       this.mailService.sendVerificationEmail(user.email, verification.code);
       return { ok: true };
     } catch (e) {
-      console.log(e);
       // return error message
       return {
         ok: false,

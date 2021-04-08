@@ -57,7 +57,7 @@ import { UploadsModule } from './uploads/uploads.module';
             database: process.env.DB_NAME,
           }),
       synchronize: process.env.NODE_ENV !== 'production',
-      logging: true,
+      logging: process.env.NODE_ENV !== 'production',
       entities: [
         User,
         Verification,
