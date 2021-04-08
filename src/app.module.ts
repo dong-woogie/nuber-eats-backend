@@ -58,7 +58,9 @@ import { UploadsModule } from './uploads/uploads.module';
           }),
       synchronize: process.env.NODE_ENV !== 'prod',
       logging: process.env.NODE_ENV === 'dev',
-      ssl: { rejectUnauthorized: false },
+      ...(process.env.NODE_ENV === 'prod' && {
+        ssl: { rejectUnauthorized: false },
+      }),
       entities: [
         User,
         Verification,
