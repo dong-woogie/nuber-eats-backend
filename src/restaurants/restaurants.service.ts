@@ -147,7 +147,8 @@ export class RestaurantSerivce {
         .getMany();
 
       return { ok: true, restaurants };
-    } catch {
+    } catch (e) {
+      console.log(e);
       return {
         ok: false,
         error: 'Could not load restaurants',
