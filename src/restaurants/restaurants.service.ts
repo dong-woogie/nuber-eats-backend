@@ -136,14 +136,14 @@ export class RestaurantSerivce {
     try {
       const restaurants = await this.restaurants
         .createQueryBuilder('restaurant')
-        .where(
-          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
-        )
-        // .orderBy('restaurant.isPromoted', 'DESC')
-        // .addOrderBy('restaurant.id')
-        // .skip(skip)
-        // .take(take)
-        .setParameters({ position: JSON.stringify(user.position) })
+        // .where(
+        //   'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+        // )
+        .orderBy('restaurant.isPromoted', 'DESC')
+        .addOrderBy('restaurant.id')
+        .skip(skip)
+        .take(take)
+        // .setParameters({ position: JSON.stringify(user.position) })
         .getMany();
 
       return { ok: true, restaurants };
