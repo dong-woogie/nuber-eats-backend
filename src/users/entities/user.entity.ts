@@ -51,6 +51,7 @@ export class User extends CoreEntity {
   @Column('geometry', {
     nullable: true,
     spatialFeatureType: 'Point',
+    srid: 4326,
   })
   position: object;
 

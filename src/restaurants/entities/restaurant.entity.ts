@@ -26,6 +26,7 @@ export class Restaurant extends CoreEntity {
   @Column('geometry', {
     nullable: true,
     spatialFeatureType: 'Point',
+    srid: 4326,
   })
   position: object;
 
