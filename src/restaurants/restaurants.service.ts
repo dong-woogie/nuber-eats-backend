@@ -137,7 +137,7 @@ export class RestaurantSerivce {
       const restaurants = await this.restaurants
         .createQueryBuilder('restaurant')
         .where(
-          'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+          'ST_DWithin(restaurant.position, ST_GeomFromGeoJSON(:position), 3000)',
         )
         .orderBy('restaurant.isPromoted', 'DESC')
         .addOrderBy('restaurant.id')
