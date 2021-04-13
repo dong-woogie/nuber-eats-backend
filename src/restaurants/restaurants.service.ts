@@ -139,10 +139,10 @@ export class RestaurantSerivce {
         .where(
           'ST_Distance(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
         )
-        .orderBy('restaurant.isPromoted', 'DESC')
-        .addOrderBy('restaurant.id')
-        .skip(skip)
-        .take(take)
+        // .orderBy('restaurant.isPromoted', 'DESC')
+        // .addOrderBy('restaurant.id')
+        // .skip(skip)
+        // .take(take)
         .setParameters({ position: JSON.stringify(user.position) })
         .getMany();
 
