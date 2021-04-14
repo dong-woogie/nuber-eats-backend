@@ -34,8 +34,4 @@ export class CommonService {
     const address = await geocoder.reverse({ lat, lon: lng });
     return address;
   }
-
-  distanceSql(startProperty: string, endProperty: string, km: number) {
-    return `ST_Distance(${startProperty}, ST_GeomFromJSON(:${endProperty})) < ${km}`;
-  }
 }
