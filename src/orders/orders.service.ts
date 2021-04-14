@@ -301,7 +301,7 @@ export class OrderService {
         .innerJoinAndSelect('order.items', 'items')
         .innerJoinAndSelect('items.dish', 'dish')
         .where(
-          'ST_DistanceSphere(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3',
+          'ST_DistanceSphere(restaurant.position, ST_GeomFromGeoJSON(:position)) < 3000',
         )
         .andWhere(
           status ? 'order.status = :status' : 'order.status IN (:...status)',
